@@ -5,6 +5,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -92,7 +93,7 @@ def get_business_details(soup):
     #        A Pandas Series of available facilities
     #        A Pandas DataFrame of open hours
 
-    business_name = str.strip(soup.find('h1', attrs={'class': 'biz-page-title embossed-text-white shortenough'}).text)
+    business_name = str.strip(soup.find('h1', attrs={'class': 'biz-page-title'}).text)
 
     try:
         business_type = soup.find('span', attrs={'class': 'category-str-list'}).find('a').text
@@ -120,8 +121,11 @@ def get_business_details(soup):
     times = re.findall(r'\d+:\d+ [ap]m', str(hours_table.find_all('td')))
     open_hours = [(times[i], times[i + 1]) for i in range(0, len(times), 2)]
 
-    business_hours = [{'day': days[i], 'open_at': open_hours[i][0], 'close_at': open_hours[i][1]} for i in
-                      range(len(days))]
+    try:
+        business_hours = [{'day': days[i], 'open_at': open_hours[i][0], 'close_at': open_hours[i][1]} for i in
+                          range(len(days))]
+    except:
+        business_hours = {}
 
     try:
         other_serv = soup.find('div', attrs={'class': 'ywidget menu-preview js-menu-preview'}).find_next_sibling()
@@ -137,7 +141,7 @@ def get_business_details(soup):
         {'business_hours': business_hours})
 
 
-def get_data(base_url, pages_count, PROXY='127.0.0.1:9666'):
+def get_data(base_url, pages_count=0, PROXY='127.0.0.1:9666'):
     # This function takes base_url and pages_count as parameters and fetch data from each review page of the url
     # Proxy address can be given as an optional parameter. 127.0.0.1:9666 will be used as default
     # Returns:
@@ -149,22 +153,39 @@ def get_data(base_url, pages_count, PROXY='127.0.0.1:9666'):
     process_start_time = datetime.now()
     print('{0} : Initiating Yelp scraper'.format(str(process_start_time)))
 
-    page_starts = range(0, pages_count * 20, 20)
+    pages = 100 if not pages_count else pages_count
+
+    page_starts = range(0, pages * 20, 20)
     urls = [base_url + '?start={0}'.format(x) for x in page_starts]
     df = pd.DataFrame()
 
     for url in urls:
+
+        if urls.index(url) == int(pages):
+            break
+
         print(bcolors.OKBLUE + '{1} : Trying to fetch page {0}'.format(url, str(datetime.now())))
         page = requests.get(url, proxies={'http': PROXY, 'https': PROXY})
         print(bcolors.OKGREEN + '{1} : Fetching page {0} completed'.format(url, str(datetime.now())))
         soup = BeautifulSoup(page.content, 'html.parser')
+
+        if not pages_count:
+            try:
+                pages = str.split(str.strip(soup.find('div', attrs={'class': 'page-of-pages'}).text), ' ')[-1]
+            except:
+                break
+
         try:
-            reviews_blocks = soup.find_all('ul', attrs={'class': 'ylist ylist-bordered reviews'})[0].find_all('div', attrs={
-                'class': 'review review--with-sidebar'})
+            reviews_blocks = soup.find_all('ul', attrs={'class': 'ylist ylist-bordered reviews'})[0].find_all('div',
+                                                                                                              attrs={
+                                                                                                                  'class': 'review review--with-sidebar'})
             df = pd.concat([df, pd.DataFrame([create_entry(block) for block in reviews_blocks])], ignore_index=True)
-            print(bcolors.OKGREEN + '{1} : Processing page {0} completed. Results appended to DataFrame'.format(url, str(datetime.now())))
+            print(bcolors.OKGREEN + '{1} : Processing page {0} completed. Results appended to DataFrame'.format(url,
+                                                                                                                str(
+                                                                                                                    datetime.now())))
         except:
-            print(bcolors.WARNING + '{0} : Extracting review blocks failed for url : {1}!'.format(str(datetime.now()), url))
+            print(bcolors.WARNING + '{0} : Extracting review blocks failed for url : {1}!'.format(str(datetime.now()),
+                                                                                                  url))
 
     print(bcolors.OKBLUE + '{0} : Trying to fetch business_details'.format(str(datetime.now())))
     (info, options, open_hours) = get_business_details(BeautifulSoup(page.content, 'html.parser'))
@@ -173,9 +194,16 @@ def get_data(base_url, pages_count, PROXY='127.0.0.1:9666'):
     process_duration = datetime.now() - process_start_time
     hours, mins, seconds = int(process_duration.seconds / 3600), int((process_duration.seconds % 3600) / 60), int(
         (process_duration.seconds % 3600) % 60)
-    print(bcolors.OKGREEN +'{0} : {1} pages scraped successfully in {2} hours, {3} minuets {4} seconds'.format(str(datetime.now()),
-                                                                                           pages_count, hours, mins,
-                                                                                           seconds))
+    print(bcolors.OKGREEN + '{0} : {1} pages scraped successfully in {2} hours, {3} minuets {4} seconds'.format(
+        str(datetime.now()),
+        pages_count, hours, mins,
+        seconds))
     print('{0} : Process Successfully completed Completed!'.format(str(datetime.now())))
-    return df, info, options, open_hours
 
+    for i in info.index:
+        df[i] = info[i]
+
+    for i in options.index:
+        df[i] = options[i]
+
+    return df, info, options, open_hours
