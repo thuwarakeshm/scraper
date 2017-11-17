@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a567bebf-155a-4a89-b868-a05fce389a37" name="Default" comment="">
-      <change type="MOVED" beforePath="$PROJECT_DIR$/yelp_scrapping.py" afterPath="$PROJECT_DIR$/examples/yelp_scrapping.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="a567bebf-155a-4a89-b868-a05fce389a37" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
