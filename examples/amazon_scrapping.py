@@ -9,4 +9,5 @@ for url in urls:
 
     df.to_csv(r'C:\Users\thuwarakeshm\Documents\scraping\Yelp\data\dataframe.csv')
 
-    # time.sleep(5)
+    if urls.index(url)/5 == 0:
+        time.sleep(5)

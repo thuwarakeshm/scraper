@@ -58,7 +58,7 @@ def get_review(base_url, pages_count, PROXY='127.0.0.9666'):
 
         for review in reviews_blocks:
             try:
-                review_num = reviews.index(review) + 1
+                review_num = reviews_blocks.index(review) + 1
             except:
                 review_num = 0
             try:
